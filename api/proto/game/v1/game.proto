@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package game.v1;
+
+option go_package = "game/v1;gamev1";
+
+service GameService {
+  rpc Play(stream ClientMessage) returns (stream ServerMessage);
+}
+
+message ClientMessage {
+  oneof payload {
+    JoinRequest join = 1;
+    InputRequest input =  2;
+    PingRequest ping = 3;
+  }
+}
+
+message JoinRequest {
+  string match_id = 1;
+  string token = 2;
+}
+
+message InputRequest {
+  uint64 sequence_id = 1;
+  InputType input = 2;
+}
+
+message PingRequest {
+  int64 timestamp = 1;
+}
+
+enum InputType {
+  INPUT_UNSPECIFIED = 0;
+  INPUT_LEFT = 1;
+  INPUT_RIGHT = 2;
+  INPUT_ROTATE_CW = 3;
+  INPUT_ROTATE_CCW = 4;
+  INPUT_SOFT_DROP = 5;
+  INPUT_HARD_DROP = 6;
+  INPUT_HOLD = 7;
+}
+
+message ServerMessage {
+  oneof payload {
+    StateUpdate state = 1;
+    GameEvent event = 2;
+    PongResponse pong = 3;
+  }
+}
+
+message StateUpdate {
+  uint64 tick_id = 1;
+  bytes grid = 2;
+  Piece current_piece = 3;
+  repeated PieceType next_pieces = 4;
+  PieceType held_piece = 5;
+  uint32 score = 6;
+  uint32 level = 7;
+}
+
+message GameEvent {
+  EventType type = 1;
+  string message = 2;
+  map<string, string> metadata = 3;
+}
+
+message PongResponse {
+  int64 timestamp = 1;
+}
+
+message Piece {
+  PieceType type = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 rotation = 4;
+}
+
+enum PieceType {
+  PIECE_UNSPECIFIED = 0;
+  PIECE_I = 1;
+  PIECE_O = 2;
+  PIECE_T = 3;
+  PIECE_S = 4;
+  PIECE_Z = 5;
+  PIECE_J = 6;
+  PIECE_L = 7;
+  PIECE_GARBAGE = 8;
+}
+
+enum EventType {
+  EVENT_UNSPECIFIED = 0;
+  EVENT_MATCH_START = 1;
+  EVENT_GAME_OVER = 2;
+  EVENT_WINNER = 3;
+  EVENT_GARBAGE_RECEIVED = 4;
+}
