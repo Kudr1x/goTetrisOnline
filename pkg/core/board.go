@@ -68,7 +68,7 @@ func GetRotatedMinos(t PieceType, rotation int) []Point {
 	minos := GetMinos(t)
 	result := make([]Point, len(minos))
 
-	rotation = rotation % 4
+	rotation %= 4
 	if rotation < 0 {
 		rotation += 4
 	}

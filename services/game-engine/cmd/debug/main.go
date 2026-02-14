@@ -8,116 +8,112 @@ import (
 	"strings"
 )
 
+type State struct {
+	Board        *core.Board
+	CurrentPiece core.Piece
+	Score        int
+	Lines        int
+	GameOver     bool
+}
+
 func main() {
-	board := core.NewBoard()
-	currentPiece := spawnPiece()
-	score := 0
-	linesTotal := 0
+	state := State{
+		Board:        core.NewBoard(),
+		CurrentPiece: spawnPiece(),
+	}
 
 	reader := bufio.NewReader(os.Stdin)
-
-	draw(board, currentPiece, score, linesTotal)
+	draw(state)
 
 	for {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
-		if input == "q" {
+		if input == "q" || state.GameOver {
 			break
 		}
 
-		nextPiece := currentPiece
-		moveApplied := false
-		shouldLock := false
+		target := getTargetPos(state.CurrentPiece, input)
 
-		switch input {
-		case "a":
-			nextPiece.Position.X--
-			if !board.HasCollision(nextPiece) {
-				currentPiece = nextPiece
-				moveApplied = true
-			}
-		case "d":
-			nextPiece.Position.X++
-			if !board.HasCollision(nextPiece) {
-				currentPiece = nextPiece
-				moveApplied = true
-			}
-		case "w":
-			nextPiece.Rotation++
-			if !board.HasCollision(nextPiece) {
-				currentPiece = nextPiece
-				moveApplied = true
-			}
-		case "s":
-			nextPiece.Position.Y++
-			if !board.HasCollision(nextPiece) {
-				currentPiece = nextPiece
-				moveApplied = true
-			} else {
-				shouldLock = true
-			}
+		if !state.Board.HasCollision(target) {
+			state.CurrentPiece = target
+		} else if input == "s" {
+			handleLock(&state)
 		}
 
-		if shouldLock {
-			board.LockPiece(currentPiece)
+		draw(state)
+	}
+}
 
-			cleared := board.ClearLines()
-			linesTotal += cleared
+func getTargetPos(p core.Piece, input string) core.Piece {
+	np := p
+	switch input {
+	case "a":
+		np.Position.X--
+	case "d":
+		np.Position.X++
+	case "s":
+		np.Position.Y++
+	case "w":
+		np.Rotation++
+	}
+	return np
+}
 
-			switch cleared {
-			case 1:
-				score += 40
-			case 2:
-				score += 100
-			case 3:
-				score += 300
-			case 4:
-				score += 1200
-			}
+func handleLock(s *State) {
+	s.Board.LockPiece(s.CurrentPiece)
 
-			currentPiece = spawnPiece()
+	cleared := s.Board.ClearLines()
+	s.Lines += cleared
+	s.Score += calculateScore(cleared)
 
-			if board.HasCollision(currentPiece) {
-				draw(board, currentPiece, score, linesTotal)
-				return
-			}
-		}
+	s.CurrentPiece = spawnPiece()
 
-		draw(board, currentPiece, score, linesTotal)
+	if s.Board.HasCollision(s.CurrentPiece) {
+		s.GameOver = true
+		fmt.Println("game over")
+	}
+}
 
-		if !moveApplied && !shouldLock {
-			fmt.Println("block")
-		}
+func calculateScore(lines int) int {
+	switch lines {
+	case 1:
+		return 40
+	case 2:
+		return 100
+	case 3:
+		return 300
+	case 4:
+		return 1200
+	default:
+		return 0
 	}
 }
 
 func spawnPiece() core.Piece {
 	return core.Piece{
+		// todo
 		Type:     core.PieceT,
 		Position: core.Point{X: 4, Y: 1},
 		Rotation: 0,
 	}
 }
 
-func draw(board *core.Board, p core.Piece, score, lines int) {
+func draw(s State) {
 	fmt.Print("\033[H\033[2J")
-
 	display := make([]string, core.BoardHeight)
-	minos := core.GetRotatedMinos(p.Type, p.Rotation)
+	minos := core.GetRotatedMinos(s.CurrentPiece.Type, s.CurrentPiece.Rotation)
 
 	for y := 0; y < core.BoardHeight; y++ {
 		row := ""
 		for x := 0; x < core.BoardWidth; x++ {
 			char := " . "
-
-			cell := board.Get(core.Point{X: x, Y: y})
-			if cell != core.PieceNone {
+			if s.Board.Get(core.Point{X: x, Y: y}) != core.PieceNone {
 				char = "[#]"
 			}
 
 			for _, mino := range minos {
-				abs := p.Position.Add(mino)
+				abs := s.CurrentPiece.Position.Add(mino)
 				if abs.X == x && abs.Y == y {
 					char = "[@]"
 				}
@@ -128,4 +124,5 @@ func draw(board *core.Board, p core.Piece, score, lines int) {
 	}
 
 	fmt.Println(strings.Join(display, "\n"))
+	fmt.Printf("Score: %d | Lines: %d\n", s.Score, s.Lines)
 }
