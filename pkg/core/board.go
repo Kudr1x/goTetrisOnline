@@ -81,3 +81,49 @@ func GetRotatedMinos(t PieceType, rotation int) []Point {
 	}
 	return result
 }
+
+func (b *Board) LockPiece(p Piece) {
+	minos := GetRotatedMinos(p.Type, p.Rotation)
+	for _, mino := range minos {
+		abs := p.Position.Add(mino)
+
+		b.Set(abs, p.Type)
+	}
+}
+
+func (b *Board) ClearLines() int {
+	linesCleared := 0
+
+	writeY := BoardHeight - 1
+
+	for readY := BoardHeight - 1; readY >= 0; readY-- {
+
+		isFull := true
+		for x := 0; x < BoardWidth; x++ {
+			if b.Get(Point{X: x, Y: readY}) == PieceNone {
+				isFull = false
+				break
+			}
+		}
+
+		if isFull {
+			linesCleared++
+		} else {
+			if writeY != readY {
+				for x := 0; x < BoardWidth; x++ {
+					val := b.Get(Point{X: x, Y: readY})
+					b.Set(Point{X: x, Y: writeY}, val)
+				}
+			}
+			writeY--
+		}
+	}
+
+	for y := writeY; y >= 0; y-- {
+		for x := 0; x < BoardWidth; x++ {
+			b.Set(Point{X: x, Y: y}, PieceNone)
+		}
+	}
+
+	return linesCleared
+}

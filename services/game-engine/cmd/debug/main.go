@@ -10,49 +10,100 @@ import (
 
 func main() {
 	board := core.NewBoard()
-
-	currentPiece := core.Piece{
-		Type:     core.PieceT,
-		Position: core.Point{X: 5, Y: 5},
-		Rotation: 0,
-	}
+	currentPiece := spawnPiece()
+	score := 0
+	linesTotal := 0
 
 	reader := bufio.NewReader(os.Stdin)
 
-	for {
-		draw(board, currentPiece)
+	draw(board, currentPiece, score, linesTotal)
 
+	for {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
+		if input == "q" {
+			break
+		}
+
 		nextPiece := currentPiece
+		moveApplied := false
+		shouldLock := false
 
 		switch input {
 		case "a":
 			nextPiece.Position.X--
+			if !board.HasCollision(nextPiece) {
+				currentPiece = nextPiece
+				moveApplied = true
+			}
 		case "d":
 			nextPiece.Position.X++
-		case "s":
-			nextPiece.Position.Y++
+			if !board.HasCollision(nextPiece) {
+				currentPiece = nextPiece
+				moveApplied = true
+			}
 		case "w":
 			nextPiece.Rotation++
-		case "q":
-			return
+			if !board.HasCollision(nextPiece) {
+				currentPiece = nextPiece
+				moveApplied = true
+			}
+		case "s":
+			nextPiece.Position.Y++
+			if !board.HasCollision(nextPiece) {
+				currentPiece = nextPiece
+				moveApplied = true
+			} else {
+				shouldLock = true
+			}
 		}
 
-		if !board.HasCollision(nextPiece) {
-			currentPiece = nextPiece
-		} else {
-			fmt.Println("Err: collision.")
+		if shouldLock {
+			board.LockPiece(currentPiece)
+
+			cleared := board.ClearLines()
+			linesTotal += cleared
+
+			switch cleared {
+			case 1:
+				score += 40
+			case 2:
+				score += 100
+			case 3:
+				score += 300
+			case 4:
+				score += 1200
+			}
+
+			currentPiece = spawnPiece()
+
+			if board.HasCollision(currentPiece) {
+				draw(board, currentPiece, score, linesTotal)
+				return
+			}
+		}
+
+		draw(board, currentPiece, score, linesTotal)
+
+		if !moveApplied && !shouldLock {
+			fmt.Println("block")
 		}
 	}
 }
 
-func draw(board *core.Board, p core.Piece) {
+func spawnPiece() core.Piece {
+	return core.Piece{
+		Type:     core.PieceT,
+		Position: core.Point{X: 4, Y: 1},
+		Rotation: 0,
+	}
+}
+
+func draw(board *core.Board, p core.Piece, score, lines int) {
 	fmt.Print("\033[H\033[2J")
 
 	display := make([]string, core.BoardHeight)
-
 	minos := core.GetRotatedMinos(p.Type, p.Rotation)
 
 	for y := 0; y < core.BoardHeight; y++ {
@@ -60,22 +111,21 @@ func draw(board *core.Board, p core.Piece) {
 		for x := 0; x < core.BoardWidth; x++ {
 			char := " . "
 
-			if board.Get(core.Point{X: x, Y: y}) != core.PieceNone {
+			cell := board.Get(core.Point{X: x, Y: y})
+			if cell != core.PieceNone {
 				char = "[#]"
 			}
 
 			for _, mino := range minos {
-				absolute := p.Position.Add(mino)
-				if absolute.X == x && absolute.Y == y {
+				abs := p.Position.Add(mino)
+				if abs.X == x && abs.Y == y {
 					char = "[@]"
 				}
 			}
 			row += char
 		}
-		display[y] = fmt.Sprintf("|%s|", row)
+		display[y] = fmt.Sprintf("|%2d| |%s|", y, row)
 	}
 
 	fmt.Println(strings.Join(display, "\n"))
-	fmt.Println("================================")
-	fmt.Printf("Pos: (%d, %d), Rot: %d\n", p.Position.X, p.Position.Y, p.Rotation)
 }
