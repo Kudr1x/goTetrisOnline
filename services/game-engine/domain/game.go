@@ -28,6 +28,7 @@ type Game struct {
 
 	Score int
 	Level int
+	Lines int
 
 	UID    string
 	Status GameStatus
@@ -89,14 +90,19 @@ func (g *Game) ApplyGravity() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	if g.Status == StatusFinished {
+	if g.Status != StatusRunning {
 		return
 	}
 
-	select {
-	case g.events <- GameEvent{Type: "state_update", Payload: g.GetSnapshot()}:
-	default:
-		// todo
+	next := g.CurrentPiece
+	next.Position.Y++
+
+	if !g.Board.HasCollision(next) {
+		g.CurrentPiece = next
+		g.broadcast()
+	} else {
+		g.lockAndSpawn()
+		g.broadcast()
 	}
 }
 
@@ -106,4 +112,117 @@ func (g *Game) GetSnapshot() map[string]interface{} {
 	}
 
 	// todo
+}
+
+func (g *Game) broadcast() {
+	if g.Status == StatusFinished {
+		return
+	}
+
+	select {
+	case g.events <- GameEvent{Type: "state_update", Payload: g.GetSnapshot()}:
+	default:
+		// skip
+	}
+}
+
+func (g *Game) lockAndSpawn() {
+	g.Board.LockPiece(g.CurrentPiece)
+
+	lines := g.Board.ClearLines()
+	g.updateScore(lines)
+
+	g.CurrentPiece = g.spawnPiece()
+
+	if g.Board.HasCollision(g.CurrentPiece) {
+		g.Status = StatusFinished
+		g.events <- GameEvent{Type: "game_over", Payload: g.Score}
+		close(g.quit)
+		close(g.events)
+	}
+}
+
+func (g *Game) updateScore(lines int) {
+	switch lines {
+	case 1:
+		g.Score += 40 * (g.Level + 1)
+	case 2:
+		g.Score += 100 * (g.Level + 1)
+	case 3:
+		g.Score += 300 * (g.Level + 1)
+	case 4:
+		g.Score += 1200 * (g.Level + 1)
+	}
+	g.Lines += lines
+}
+
+func (g *Game) MoveLeft() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	next := g.CurrentPiece
+	next.Position.X--
+
+	if !g.Board.HasCollision(next) {
+		g.CurrentPiece = next
+		g.broadcast()
+	}
+}
+
+func (g *Game) MoveRight() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	next := g.CurrentPiece
+	next.Position.X++
+
+	if !g.Board.HasCollision(next) {
+		g.CurrentPiece = next
+		g.broadcast()
+	}
+}
+
+func (g *Game) Rotate(direction int) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	next := g.CurrentPiece
+
+	next.Rotation += direction
+
+	next.Rotation = (next.Rotation%4 + 4) % 4
+
+	if !g.Board.HasCollision(next) {
+		g.CurrentPiece = next
+		g.broadcast()
+	} else {
+		// todo
+	}
+}
+
+func (g *Game) HardDrop() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	for {
+		next := g.CurrentPiece
+		next.Position.Y++
+
+		if g.Board.HasCollision(next) {
+			g.lockAndSpawn()
+			g.broadcast()
+			return
+		}
+
+		g.CurrentPiece = next
+	}
+}
+
+func (g *Game) spawnPiece() core.Piece {
+	// todo random
+	return core.Piece{
+		Type:     core.PieceT,
+		Position: core.Point{X: 4, Y: 0},
+		Rotation: 0,
+	}
 }
