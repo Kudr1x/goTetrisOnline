@@ -91,8 +91,8 @@ func (b *Board) LockPiece(p Piece) {
 	}
 }
 
-func (b *Board) ClearLines() int {
-	linesCleared := 0
+func (b *Board) ClearLines() int32 {
+	var linesCleared int32 = 0
 
 	writeY := BoardHeight - 1
 
@@ -126,4 +126,12 @@ func (b *Board) ClearLines() int {
 	}
 
 	return linesCleared
+}
+
+func (b *Board) ToBytes() []byte {
+	out := make([]byte, len(b.Cells))
+	for i, v := range b.Cells {
+		out[i] = byte(v)
+	}
+	return out
 }

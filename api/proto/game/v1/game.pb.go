@@ -558,8 +558,8 @@ type StateUpdate struct {
 	CurrentPiece  *Piece                 `protobuf:"bytes,3,opt,name=current_piece,json=currentPiece,proto3" json:"current_piece,omitempty"`
 	NextPieces    []PieceType            `protobuf:"varint,4,rep,packed,name=next_pieces,json=nextPieces,proto3,enum=game.v1.PieceType" json:"next_pieces,omitempty"`
 	HeldPiece     PieceType              `protobuf:"varint,5,opt,name=held_piece,json=heldPiece,proto3,enum=game.v1.PieceType" json:"held_piece,omitempty"`
-	Score         uint32                 `protobuf:"varint,6,opt,name=score,proto3" json:"score,omitempty"`
-	Level         uint32                 `protobuf:"varint,7,opt,name=level,proto3" json:"level,omitempty"`
+	Score         int32                  `protobuf:"varint,6,opt,name=score,proto3" json:"score,omitempty"`
+	Level         int32                  `protobuf:"varint,7,opt,name=level,proto3" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -629,14 +629,14 @@ func (x *StateUpdate) GetHeldPiece() PieceType {
 	return PieceType_PIECE_UNSPECIFIED
 }
 
-func (x *StateUpdate) GetScore() uint32 {
+func (x *StateUpdate) GetScore() int32 {
 	if x != nil {
 		return x.Score
 	}
 	return 0
 }
 
-func (x *StateUpdate) GetLevel() uint32 {
+func (x *StateUpdate) GetLevel() int32 {
 	if x != nil {
 		return x.Level
 	}
@@ -847,8 +847,8 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"nextPieces\x121\n" +
 	"\n" +
 	"held_piece\x18\x05 \x01(\x0e2\x12.game.v1.PieceTypeR\theldPiece\x12\x14\n" +
-	"\x05score\x18\x06 \x01(\rR\x05score\x12\x14\n" +
-	"\x05level\x18\a \x01(\rR\x05level\"\xc8\x01\n" +
+	"\x05score\x18\x06 \x01(\x05R\x05score\x12\x14\n" +
+	"\x05level\x18\a \x01(\x05R\x05level\"\xc8\x01\n" +
 	"\tGameEvent\x12&\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x12.game.v1.EventTypeR\x04type\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12<\n" +

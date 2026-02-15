@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+const (
+	StatusWaiting GameStatus = iota
+	StatusRunning
+	StatusFinished
+)
+
 type GameStatus int
 
 type GameEvent struct {
@@ -13,11 +19,13 @@ type GameEvent struct {
 	Payload interface{}
 }
 
-const (
-	StatusWaiting GameStatus = iota
-	StatusRunning
-	StatusFinished
-)
+type GameStateDTO struct {
+	Score        int32
+	Level        int32
+	Grid         []byte
+	CurrentPiece core.Piece
+	NextPieces   []core.PieceType
+}
 
 type Game struct {
 	mu sync.RWMutex
@@ -26,9 +34,9 @@ type Game struct {
 	CurrentPiece core.Piece
 	NextPieces   []core.PieceType
 
-	Score int
-	Level int
-	Lines int
+	Score int32
+	Level int32
+	Lines int32
 
 	UID    string
 	Status GameStatus
@@ -51,7 +59,7 @@ func (g *Game) Start() {
 	g.mu.Lock()
 	g.Status = StatusRunning
 
-	// g.spawnPiece()
+	g.CurrentPiece = g.spawnPiece()
 	g.mu.Unlock()
 
 	go g.loop()
@@ -106,12 +114,14 @@ func (g *Game) ApplyGravity() {
 	}
 }
 
-func (g *Game) GetSnapshot() map[string]interface{} {
-	return map[string]interface{}{
-		"score": g.Score,
+func (g *Game) GetSnapshot() GameStateDTO {
+	return GameStateDTO{
+		Score:        g.Score,
+		Level:        g.Level,
+		Grid:         g.Board.ToBytes(),
+		CurrentPiece: g.CurrentPiece,
+		NextPieces:   g.NextPieces,
 	}
-
-	// todo
 }
 
 func (g *Game) broadcast() {
@@ -142,7 +152,7 @@ func (g *Game) lockAndSpawn() {
 	}
 }
 
-func (g *Game) updateScore(lines int) {
+func (g *Game) updateScore(lines int32) {
 	switch lines {
 	case 1:
 		g.Score += 40 * (g.Level + 1)
@@ -195,9 +205,7 @@ func (g *Game) Rotate(direction int) {
 	if !g.Board.HasCollision(next) {
 		g.CurrentPiece = next
 		g.broadcast()
-	} else {
-		// todo
-	}
+	} // todo else
 }
 
 func (g *Game) HardDrop() {

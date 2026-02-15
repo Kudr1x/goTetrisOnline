@@ -55,8 +55,8 @@ message StateUpdate {
   Piece current_piece = 3;
   repeated PieceType next_pieces = 4;
   PieceType held_piece = 5;
-  uint32 score = 6;
-  uint32 level = 7;
+  int32 score = 6;
+  int32 level = 7;
 }
 
 message GameEvent {
