@@ -12,6 +12,15 @@ gen:
 clean:
 	rm -f $(PROTO_PATH)/game/v1/*.pb.go
 
+run-engine:
+	go run services/game-engine/cmd/main.go
+
+run-gateway:
+	go run services/gateway/cmd/main.go
+
+run-client:
+	go run client/cmd/main.go
+
 
 .PHONY: lint
 lint:

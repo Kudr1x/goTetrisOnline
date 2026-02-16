@@ -2,7 +2,7 @@ package main
 
 import (
 	pb "GoTetrisOnline/api/proto/game/v1"
-	"GoTetrisOnline/services/game-engine/inernal/server"
+	"GoTetrisOnline/services/game-engine/internal/server"
 	"log"
 	"net"
 	"os"
