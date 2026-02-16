@@ -18,6 +18,8 @@ const (
 )
 
 func main() {
+	// todo
+	//nolint:gosec // internal service
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
