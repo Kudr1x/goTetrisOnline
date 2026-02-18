@@ -11,15 +11,23 @@ gen:
 
 clean:
 	rm -f $(PROTO_PATH)/game/v1/*.pb.go
+	@echo "ok"
 
 run-engine:
 	go run services/game-engine/cmd/main.go
+	@echo "ok"
 
 run-gateway:
 	go run services/gateway/cmd/main.go
+	@echo "ok"
 
 run-client:
 	go run client/cmd/main.go
+	@echo "ok"
+
+wasm:
+	GOOS=js GOARCH=wasm go build -o client/wasm/tetris.wasm ./client/wasm
+	@echo "ok"
 
 
 .PHONY: lint
