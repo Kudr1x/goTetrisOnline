@@ -29,7 +29,9 @@ type BrowserCommand struct {
 
 func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: []string{"*"},
+		InsecureSkipVerify: true,
+		OriginPatterns:     []string{"*"},
+		CompressionMode:    websocket.CompressionDisabled,
 	})
 	if err != nil {
 		log.Printf("failed to accept websocket: %v", err)

@@ -29,13 +29,13 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":8081",
 		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
-	log.Println("Gateway listening on :8080...")
+	log.Println("Gateway listening on :8081...")
 	if err := srv.ListenAndServe(); err != nil {
 		log.Printf("failed to start gateway: %v", err)
 		return
