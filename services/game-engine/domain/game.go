@@ -43,6 +43,8 @@ type Game struct {
 
 	events chan GameEvent
 	quit   chan struct{}
+
+	bag *core.Bag
 }
 
 func NewGame(uid string) *Game {
@@ -52,6 +54,7 @@ func NewGame(uid string) *Game {
 		Board:  core.NewBoard(),
 		events: make(chan GameEvent, 100),
 		quit:   make(chan struct{}),
+		bag:    core.NewBag(),
 	}
 }
 
@@ -120,7 +123,7 @@ func (g *Game) GetSnapshot() GameStateDTO {
 		Level:        g.Level,
 		Grid:         g.Board.ToBytes(),
 		CurrentPiece: g.CurrentPiece,
-		NextPieces:   g.NextPieces,
+		NextPieces:   g.bag.Peek(3),
 	}
 }
 
@@ -227,9 +230,8 @@ func (g *Game) HardDrop() {
 }
 
 func (g *Game) spawnPiece() core.Piece {
-	// todo random
 	return core.Piece{
-		Type:     core.PieceT,
+		Type:     g.bag.Next(),
 		Position: core.Point{X: 4, Y: 0},
 		Rotation: 0,
 	}
