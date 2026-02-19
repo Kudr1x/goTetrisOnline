@@ -199,16 +199,15 @@ func (g *Game) Rotate(direction int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	next := g.CurrentPiece
+	if g.Status != StatusRunning {
+		return
+	}
 
-	next.Rotation += direction
-
-	next.Rotation = (next.Rotation%4 + 4) % 4
-
-	if !g.Board.HasCollision(next) {
-		g.CurrentPiece = next
+	rotated, ok := core.TryRotate(g.Board, g.CurrentPiece, direction)
+	if ok {
+		g.CurrentPiece = rotated
 		g.broadcast()
-	} // todo else
+	}
 }
 
 func (g *Game) HardDrop() {

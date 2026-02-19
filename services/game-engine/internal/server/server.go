@@ -107,6 +107,11 @@ func mapEventToProto(event domain.GameEvent) *pb.ServerMessage {
 			return nil
 		}
 
+		nextPieces := make([]pb.PieceType, len(state.NextPieces))
+		for i, pieceType := range state.NextPieces {
+			nextPieces[i] = pb.PieceType(pieceType) //nolint:gosec // piece types are small enums
+		}
+
 		return &pb.ServerMessage{
 			Payload: &pb.ServerMessage_State{
 				State: &pb.StateUpdate{
@@ -120,6 +125,7 @@ func mapEventToProto(event domain.GameEvent) *pb.ServerMessage {
 						Y:        int32(state.CurrentPiece.Position.Y),  //nolint:gosec // coordinates are small
 						Rotation: int32(state.CurrentPiece.Rotation),    //nolint:gosec // coordinates are small
 					},
+					NextPieces: nextPieces,
 				},
 			},
 		}
