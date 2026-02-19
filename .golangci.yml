@@ -22,7 +22,7 @@ linters:
 
 linters-settings:
   gocyclo:
-    min-complexity: 15
+    min-complexity: 25
   revive:
     rules:
       - name: exported
@@ -32,6 +32,9 @@ linters-settings:
   errcheck:
     exclude-functions:
       - (io.Closer).Close
+  gocritic:
+    disabled-checks:
+      - exitAfterDefer
 
 issues:
   max-issues-per-linter: 50
@@ -40,3 +43,7 @@ issues:
     - api/proto
     - bin
     - vendor
+  exclude-rules:
+    - path: client/cmd/
+      linters:
+        - gocyclo

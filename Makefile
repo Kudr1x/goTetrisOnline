@@ -21,14 +21,16 @@ run-gateway:
 	go run services/gateway/cmd/main.go
 	@echo "ok"
 
-run-client:
-	go run client/cmd/main.go
-	@echo "ok"
+run-terminal:
+	go run client/cmd/terminal/main.go
 
 wasm:
 	GOOS=js GOARCH=wasm go build -o client/wasm/tetris.wasm ./client/wasm
 	@echo "ok"
 
+.PHONY: test
+test:
+	go test ./... -v
 
 .PHONY: lint
 lint:
