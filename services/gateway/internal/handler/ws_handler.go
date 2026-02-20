@@ -3,14 +3,15 @@ package handler
 import (
 	pb "GoTetrisOnline/api/proto/game/v1"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 type GatewayHandler struct {
@@ -21,10 +22,6 @@ func NewGatewayHandler(conn *grpc.ClientConn) *GatewayHandler {
 	return &GatewayHandler{
 		grpcClient: pb.NewGameServiceClient(conn),
 	}
-}
-
-type BrowserCommand struct {
-	Cmd string `json:"cmd"`
 }
 
 func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -48,30 +45,26 @@ func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = stream.Send(&pb.ClientMessage{
-		Payload: &pb.ClientMessage_Join{
-			// todo
-			Join: &pb.JoinRequest{
-				MatchId: "room-1",
-			},
-		},
-	})
-	if err != nil {
-		log.Printf("failed to join match: %v", err)
-		return
-	}
-
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		for {
 			msg, err := stream.Recv()
 			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
 				return err
 			}
 
+			data, err := proto.Marshal(msg)
+			if err != nil {
+				log.Printf("failed to marshal message: %v", err)
+				continue
+			}
+
 			writeCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-			err = wsjson.Write(writeCtx, c, msg)
+			err = c.Write(writeCtx, websocket.MessageBinary, data)
 			cancel()
 			if err != nil {
 				return err
@@ -81,8 +74,7 @@ func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	g.Go(func() error {
 		for {
-			var cmd BrowserCommand
-			err := wsjson.Read(ctx, c, &cmd)
+			msgType, data, err := c.Read(ctx)
 			if err != nil {
 				if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 					return nil
@@ -90,16 +82,19 @@ func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
-			input := mapJsonToProto(cmd.Cmd)
-			if input != pb.InputType_INPUT_UNSPECIFIED {
-				err = stream.Send(&pb.ClientMessage{
-					Payload: &pb.ClientMessage_Input{
-						Input: &pb.InputRequest{Input: input},
-					},
-				})
-				if err != nil {
-					return err
-				}
+			if msgType != websocket.MessageBinary {
+				log.Printf("unexpected message type: %v", msgType)
+				continue
+			}
+
+			var clientMsg pb.ClientMessage
+			if err := proto.Unmarshal(data, &clientMsg); err != nil {
+				log.Printf("failed to unmarshal client message: %v", err)
+				continue
+			}
+
+			if err := stream.Send(&clientMsg); err != nil {
+				return err
 			}
 		}
 	})
@@ -109,19 +104,4 @@ func (h *GatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Close(websocket.StatusNormalClosure, "bye")
-}
-
-func mapJsonToProto(cmd string) pb.InputType {
-	switch cmd {
-	case "left":
-		return pb.InputType_INPUT_LEFT
-	case "right":
-		return pb.InputType_INPUT_RIGHT
-	case "rotate":
-		return pb.InputType_INPUT_ROTATE_CW
-	case "drop":
-		return pb.InputType_INPUT_HARD_DROP
-	default:
-		return pb.InputType_INPUT_UNSPECIFIED
-	}
 }
