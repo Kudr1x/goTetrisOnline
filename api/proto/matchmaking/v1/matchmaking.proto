@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package matchmaking.v1;
+
+option go_package = "matchmaking/v1;matchmakingv1";
+
+service MatchmakingService {
+  rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
+  rpc JoinByInvite(JoinByInviteRequest) returns (JoinByInviteResponse);
+  rpc FindRandom(FindRandomRequest) returns (FindRandomResponse);
+  rpc GetMatchInfo(GetMatchInfoRequest) returns (GetMatchInfoResponse);
+}
+
+message CreateMatchRequest {
+  GameMode mode = 1;
+  string player_id = 2;
+}
+
+message CreateMatchResponse {
+  string match_id = 1;
+  string invite_code = 2;
+  string invite_link = 3;
+}
+
+message JoinByInviteRequest {
+  string invite_code = 1;
+  string player_id = 2;
+}
+
+message JoinByInviteResponse {
+  string match_id = 1;
+  MatchStatus status = 2;
+}
+
+message FindRandomRequest {
+  GameMode mode = 1;
+  string player_id = 2;
+}
+
+message FindRandomResponse {
+  string match_id = 1;
+  MatchStatus status = 2;
+}
+
+message GetMatchInfoRequest {
+  string match_id = 1;
+}
+
+message GetMatchInfoResponse {
+  string match_id = 1;
+  GameMode mode = 2;
+  repeated Player players = 3;
+  MatchStatus status = 4;
+}
+
+message Player {
+  string player_id = 1;
+  bool ready = 2;
+}
+
+enum GameMode {
+  GAME_MODE_UNSPECIFIED = 0;
+  GAME_MODE_SOLO = 1;
+  GAME_MODE_ONE_VS_ONE = 2;
+}
+
+enum MatchStatus {
+  MATCH_STATUS_UNSPECIFIED = 0;
+  MATCH_STATUS_WAITING = 1;
+  MATCH_STATUS_READY = 2;
+  MATCH_STATUS_IN_PROGRESS = 3;
+  MATCH_STATUS_FINISHED = 4;
+}

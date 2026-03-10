@@ -160,6 +160,8 @@ const (
 	EventType_EVENT_GAME_OVER        EventType = 2
 	EventType_EVENT_WINNER           EventType = 3
 	EventType_EVENT_GARBAGE_RECEIVED EventType = 4
+	EventType_EVENT_OPPONENT_JOINED  EventType = 5
+	EventType_EVENT_OPPONENT_LEFT    EventType = 6
 )
 
 // Enum value maps for EventType.
@@ -170,6 +172,8 @@ var (
 		2: "EVENT_GAME_OVER",
 		3: "EVENT_WINNER",
 		4: "EVENT_GARBAGE_RECEIVED",
+		5: "EVENT_OPPONENT_JOINED",
+		6: "EVENT_OPPONENT_LEFT",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_UNSPECIFIED":      0,
@@ -177,6 +181,8 @@ var (
 		"EVENT_GAME_OVER":        2,
 		"EVENT_WINNER":           3,
 		"EVENT_GARBAGE_RECEIVED": 4,
+		"EVENT_OPPONENT_JOINED":  5,
+		"EVENT_OPPONENT_LEFT":    6,
 	}
 )
 
@@ -205,6 +211,55 @@ func (x EventType) Number() protoreflect.EnumNumber {
 // Deprecated: Use EventType.Descriptor instead.
 func (EventType) EnumDescriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{2}
+}
+
+type GameMode int32
+
+const (
+	GameMode_GAME_MODE_UNSPECIFIED GameMode = 0
+	GameMode_GAME_MODE_SOLO        GameMode = 1
+	GameMode_GAME_MODE_ONE_VS_ONE  GameMode = 2
+)
+
+// Enum value maps for GameMode.
+var (
+	GameMode_name = map[int32]string{
+		0: "GAME_MODE_UNSPECIFIED",
+		1: "GAME_MODE_SOLO",
+		2: "GAME_MODE_ONE_VS_ONE",
+	}
+	GameMode_value = map[string]int32{
+		"GAME_MODE_UNSPECIFIED": 0,
+		"GAME_MODE_SOLO":        1,
+		"GAME_MODE_ONE_VS_ONE":  2,
+	}
+)
+
+func (x GameMode) Enum() *GameMode {
+	p := new(GameMode)
+	*p = x
+	return p
+}
+
+func (x GameMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GameMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_game_v1_game_proto_enumTypes[3].Descriptor()
+}
+
+func (GameMode) Type() protoreflect.EnumType {
+	return &file_game_v1_game_proto_enumTypes[3]
+}
+
+func (x GameMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GameMode.Descriptor instead.
+func (GameMode) EnumDescriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{3}
 }
 
 type ClientMessage struct {
@@ -460,6 +515,7 @@ type ServerMessage struct {
 	//	*ServerMessage_State
 	//	*ServerMessage_Event
 	//	*ServerMessage_Pong
+	//	*ServerMessage_Garbage
 	Payload       isServerMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -529,6 +585,15 @@ func (x *ServerMessage) GetPong() *PongResponse {
 	return nil
 }
 
+func (x *ServerMessage) GetGarbage() *GarbageLines {
+	if x != nil {
+		if x, ok := x.Payload.(*ServerMessage_Garbage); ok {
+			return x.Garbage
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Payload interface {
 	isServerMessage_Payload()
 }
@@ -545,11 +610,61 @@ type ServerMessage_Pong struct {
 	Pong *PongResponse `protobuf:"bytes,3,opt,name=pong,proto3,oneof"`
 }
 
+type ServerMessage_Garbage struct {
+	Garbage *GarbageLines `protobuf:"bytes,4,opt,name=garbage,proto3,oneof"`
+}
+
 func (*ServerMessage_State) isServerMessage_Payload() {}
 
 func (*ServerMessage_Event) isServerMessage_Payload() {}
 
 func (*ServerMessage_Pong) isServerMessage_Payload() {}
+
+func (*ServerMessage_Garbage) isServerMessage_Payload() {}
+
+type GarbageLines struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GarbageLines) Reset() {
+	*x = GarbageLines{}
+	mi := &file_game_v1_game_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GarbageLines) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GarbageLines) ProtoMessage() {}
+
+func (x *GarbageLines) ProtoReflect() protoreflect.Message {
+	mi := &file_game_v1_game_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GarbageLines.ProtoReflect.Descriptor instead.
+func (*GarbageLines) Descriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GarbageLines) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
 
 type StateUpdate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -560,13 +675,14 @@ type StateUpdate struct {
 	HeldPiece     PieceType              `protobuf:"varint,5,opt,name=held_piece,json=heldPiece,proto3,enum=game.v1.PieceType" json:"held_piece,omitempty"`
 	Score         int32                  `protobuf:"varint,6,opt,name=score,proto3" json:"score,omitempty"`
 	Level         int32                  `protobuf:"varint,7,opt,name=level,proto3" json:"level,omitempty"`
+	Opponent      *OpponentState         `protobuf:"bytes,8,opt,name=opponent,proto3" json:"opponent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StateUpdate) Reset() {
 	*x = StateUpdate{}
-	mi := &file_game_v1_game_proto_msgTypes[5]
+	mi := &file_game_v1_game_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -578,7 +694,7 @@ func (x *StateUpdate) String() string {
 func (*StateUpdate) ProtoMessage() {}
 
 func (x *StateUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[5]
+	mi := &file_game_v1_game_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +707,7 @@ func (x *StateUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StateUpdate.ProtoReflect.Descriptor instead.
 func (*StateUpdate) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{5}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *StateUpdate) GetTickId() uint64 {
@@ -643,6 +759,81 @@ func (x *StateUpdate) GetLevel() int32 {
 	return 0
 }
 
+func (x *StateUpdate) GetOpponent() *OpponentState {
+	if x != nil {
+		return x.Opponent
+	}
+	return nil
+}
+
+type OpponentState struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Grid          []byte                 `protobuf:"bytes,1,opt,name=grid,proto3" json:"grid,omitempty"`
+	Score         int32                  `protobuf:"varint,2,opt,name=score,proto3" json:"score,omitempty"`
+	CurrentPiece  *Piece                 `protobuf:"bytes,3,opt,name=current_piece,json=currentPiece,proto3" json:"current_piece,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,4,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OpponentState) Reset() {
+	*x = OpponentState{}
+	mi := &file_game_v1_game_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpponentState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpponentState) ProtoMessage() {}
+
+func (x *OpponentState) ProtoReflect() protoreflect.Message {
+	mi := &file_game_v1_game_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpponentState.ProtoReflect.Descriptor instead.
+func (*OpponentState) Descriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *OpponentState) GetGrid() []byte {
+	if x != nil {
+		return x.Grid
+	}
+	return nil
+}
+
+func (x *OpponentState) GetScore() int32 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *OpponentState) GetCurrentPiece() *Piece {
+	if x != nil {
+		return x.CurrentPiece
+	}
+	return nil
+}
+
+func (x *OpponentState) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
 type GameEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=game.v1.EventType" json:"type,omitempty"`
@@ -654,7 +845,7 @@ type GameEvent struct {
 
 func (x *GameEvent) Reset() {
 	*x = GameEvent{}
-	mi := &file_game_v1_game_proto_msgTypes[6]
+	mi := &file_game_v1_game_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +857,7 @@ func (x *GameEvent) String() string {
 func (*GameEvent) ProtoMessage() {}
 
 func (x *GameEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[6]
+	mi := &file_game_v1_game_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +870,7 @@ func (x *GameEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameEvent.ProtoReflect.Descriptor instead.
 func (*GameEvent) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{6}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GameEvent) GetType() EventType {
@@ -712,7 +903,7 @@ type PongResponse struct {
 
 func (x *PongResponse) Reset() {
 	*x = PongResponse{}
-	mi := &file_game_v1_game_proto_msgTypes[7]
+	mi := &file_game_v1_game_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +915,7 @@ func (x *PongResponse) String() string {
 func (*PongResponse) ProtoMessage() {}
 
 func (x *PongResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[7]
+	mi := &file_game_v1_game_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -737,7 +928,7 @@ func (x *PongResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PongResponse.ProtoReflect.Descriptor instead.
 func (*PongResponse) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{7}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PongResponse) GetTimestamp() int64 {
@@ -759,7 +950,7 @@ type Piece struct {
 
 func (x *Piece) Reset() {
 	*x = Piece{}
-	mi := &file_game_v1_game_proto_msgTypes[8]
+	mi := &file_game_v1_game_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +962,7 @@ func (x *Piece) String() string {
 func (*Piece) ProtoMessage() {}
 
 func (x *Piece) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[8]
+	mi := &file_game_v1_game_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +975,7 @@ func (x *Piece) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Piece.ProtoReflect.Descriptor instead.
 func (*Piece) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{8}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Piece) GetType() PieceType {
@@ -833,12 +1024,15 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"sequenceId\x12(\n" +
 	"\x05input\x18\x02 \x01(\x0e2\x12.game.v1.InputTypeR\x05input\"+\n" +
 	"\vPingRequest\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\"\xa1\x01\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\"\xd4\x01\n" +
 	"\rServerMessage\x12,\n" +
 	"\x05state\x18\x01 \x01(\v2\x14.game.v1.StateUpdateH\x00R\x05state\x12*\n" +
 	"\x05event\x18\x02 \x01(\v2\x12.game.v1.GameEventH\x00R\x05event\x12+\n" +
-	"\x04pong\x18\x03 \x01(\v2\x15.game.v1.PongResponseH\x00R\x04pongB\t\n" +
-	"\apayload\"\x83\x02\n" +
+	"\x04pong\x18\x03 \x01(\v2\x15.game.v1.PongResponseH\x00R\x04pong\x121\n" +
+	"\agarbage\x18\x04 \x01(\v2\x15.game.v1.GarbageLinesH\x00R\agarbageB\t\n" +
+	"\apayload\"$\n" +
+	"\fGarbageLines\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x05R\x05count\"\xb7\x02\n" +
 	"\vStateUpdate\x12\x17\n" +
 	"\atick_id\x18\x01 \x01(\x04R\x06tickId\x12\x12\n" +
 	"\x04grid\x18\x02 \x01(\fR\x04grid\x123\n" +
@@ -848,7 +1042,13 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\n" +
 	"held_piece\x18\x05 \x01(\x0e2\x12.game.v1.PieceTypeR\theldPiece\x12\x14\n" +
 	"\x05score\x18\x06 \x01(\x05R\x05score\x12\x14\n" +
-	"\x05level\x18\a \x01(\x05R\x05level\"\xc8\x01\n" +
+	"\x05level\x18\a \x01(\x05R\x05level\x122\n" +
+	"\bopponent\x18\b \x01(\v2\x16.game.v1.OpponentStateR\bopponent\"\x8b\x01\n" +
+	"\rOpponentState\x12\x12\n" +
+	"\x04grid\x18\x01 \x01(\fR\x04grid\x12\x14\n" +
+	"\x05score\x18\x02 \x01(\x05R\x05score\x123\n" +
+	"\rcurrent_piece\x18\x03 \x01(\v2\x0e.game.v1.PieceR\fcurrentPiece\x12\x1b\n" +
+	"\tplayer_id\x18\x04 \x01(\tR\bplayerId\"\xc8\x01\n" +
 	"\tGameEvent\x12&\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x12.game.v1.EventTypeR\x04type\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12<\n" +
@@ -883,13 +1083,19 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\aPIECE_Z\x10\x05\x12\v\n" +
 	"\aPIECE_J\x10\x06\x12\v\n" +
 	"\aPIECE_L\x10\a\x12\x11\n" +
-	"\rPIECE_GARBAGE\x10\b*|\n" +
+	"\rPIECE_GARBAGE\x10\b*\xb0\x01\n" +
 	"\tEventType\x12\x15\n" +
 	"\x11EVENT_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11EVENT_MATCH_START\x10\x01\x12\x13\n" +
 	"\x0fEVENT_GAME_OVER\x10\x02\x12\x10\n" +
 	"\fEVENT_WINNER\x10\x03\x12\x1a\n" +
-	"\x16EVENT_GARBAGE_RECEIVED\x10\x042I\n" +
+	"\x16EVENT_GARBAGE_RECEIVED\x10\x04\x12\x19\n" +
+	"\x15EVENT_OPPONENT_JOINED\x10\x05\x12\x17\n" +
+	"\x13EVENT_OPPONENT_LEFT\x10\x06*S\n" +
+	"\bGameMode\x12\x19\n" +
+	"\x15GAME_MODE_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eGAME_MODE_SOLO\x10\x01\x12\x18\n" +
+	"\x14GAME_MODE_ONE_VS_ONE\x10\x022I\n" +
 	"\vGameService\x12:\n" +
 	"\x04Play\x12\x16.game.v1.ClientMessage\x1a\x16.game.v1.ServerMessage(\x010\x01B\x10Z\x0egame/v1;gamev1b\x06proto3"
 
@@ -905,44 +1111,50 @@ func file_game_v1_game_proto_rawDescGZIP() []byte {
 	return file_game_v1_game_proto_rawDescData
 }
 
-var file_game_v1_game_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_game_v1_game_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_game_v1_game_proto_goTypes = []any{
 	(InputType)(0),        // 0: game.v1.InputType
 	(PieceType)(0),        // 1: game.v1.PieceType
 	(EventType)(0),        // 2: game.v1.EventType
-	(*ClientMessage)(nil), // 3: game.v1.ClientMessage
-	(*JoinRequest)(nil),   // 4: game.v1.JoinRequest
-	(*InputRequest)(nil),  // 5: game.v1.InputRequest
-	(*PingRequest)(nil),   // 6: game.v1.PingRequest
-	(*ServerMessage)(nil), // 7: game.v1.ServerMessage
-	(*StateUpdate)(nil),   // 8: game.v1.StateUpdate
-	(*GameEvent)(nil),     // 9: game.v1.GameEvent
-	(*PongResponse)(nil),  // 10: game.v1.PongResponse
-	(*Piece)(nil),         // 11: game.v1.Piece
-	nil,                   // 12: game.v1.GameEvent.MetadataEntry
+	(GameMode)(0),         // 3: game.v1.GameMode
+	(*ClientMessage)(nil), // 4: game.v1.ClientMessage
+	(*JoinRequest)(nil),   // 5: game.v1.JoinRequest
+	(*InputRequest)(nil),  // 6: game.v1.InputRequest
+	(*PingRequest)(nil),   // 7: game.v1.PingRequest
+	(*ServerMessage)(nil), // 8: game.v1.ServerMessage
+	(*GarbageLines)(nil),  // 9: game.v1.GarbageLines
+	(*StateUpdate)(nil),   // 10: game.v1.StateUpdate
+	(*OpponentState)(nil), // 11: game.v1.OpponentState
+	(*GameEvent)(nil),     // 12: game.v1.GameEvent
+	(*PongResponse)(nil),  // 13: game.v1.PongResponse
+	(*Piece)(nil),         // 14: game.v1.Piece
+	nil,                   // 15: game.v1.GameEvent.MetadataEntry
 }
 var file_game_v1_game_proto_depIdxs = []int32{
-	4,  // 0: game.v1.ClientMessage.join:type_name -> game.v1.JoinRequest
-	5,  // 1: game.v1.ClientMessage.input:type_name -> game.v1.InputRequest
-	6,  // 2: game.v1.ClientMessage.ping:type_name -> game.v1.PingRequest
+	5,  // 0: game.v1.ClientMessage.join:type_name -> game.v1.JoinRequest
+	6,  // 1: game.v1.ClientMessage.input:type_name -> game.v1.InputRequest
+	7,  // 2: game.v1.ClientMessage.ping:type_name -> game.v1.PingRequest
 	0,  // 3: game.v1.InputRequest.input:type_name -> game.v1.InputType
-	8,  // 4: game.v1.ServerMessage.state:type_name -> game.v1.StateUpdate
-	9,  // 5: game.v1.ServerMessage.event:type_name -> game.v1.GameEvent
-	10, // 6: game.v1.ServerMessage.pong:type_name -> game.v1.PongResponse
-	11, // 7: game.v1.StateUpdate.current_piece:type_name -> game.v1.Piece
-	1,  // 8: game.v1.StateUpdate.next_pieces:type_name -> game.v1.PieceType
-	1,  // 9: game.v1.StateUpdate.held_piece:type_name -> game.v1.PieceType
-	2,  // 10: game.v1.GameEvent.type:type_name -> game.v1.EventType
-	12, // 11: game.v1.GameEvent.metadata:type_name -> game.v1.GameEvent.MetadataEntry
-	1,  // 12: game.v1.Piece.type:type_name -> game.v1.PieceType
-	3,  // 13: game.v1.GameService.Play:input_type -> game.v1.ClientMessage
-	7,  // 14: game.v1.GameService.Play:output_type -> game.v1.ServerMessage
-	14, // [14:15] is the sub-list for method output_type
-	13, // [13:14] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	10, // 4: game.v1.ServerMessage.state:type_name -> game.v1.StateUpdate
+	12, // 5: game.v1.ServerMessage.event:type_name -> game.v1.GameEvent
+	13, // 6: game.v1.ServerMessage.pong:type_name -> game.v1.PongResponse
+	9,  // 7: game.v1.ServerMessage.garbage:type_name -> game.v1.GarbageLines
+	14, // 8: game.v1.StateUpdate.current_piece:type_name -> game.v1.Piece
+	1,  // 9: game.v1.StateUpdate.next_pieces:type_name -> game.v1.PieceType
+	1,  // 10: game.v1.StateUpdate.held_piece:type_name -> game.v1.PieceType
+	11, // 11: game.v1.StateUpdate.opponent:type_name -> game.v1.OpponentState
+	14, // 12: game.v1.OpponentState.current_piece:type_name -> game.v1.Piece
+	2,  // 13: game.v1.GameEvent.type:type_name -> game.v1.EventType
+	15, // 14: game.v1.GameEvent.metadata:type_name -> game.v1.GameEvent.MetadataEntry
+	1,  // 15: game.v1.Piece.type:type_name -> game.v1.PieceType
+	4,  // 16: game.v1.GameService.Play:input_type -> game.v1.ClientMessage
+	8,  // 17: game.v1.GameService.Play:output_type -> game.v1.ServerMessage
+	17, // [17:18] is the sub-list for method output_type
+	16, // [16:17] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_game_v1_game_proto_init() }
@@ -959,14 +1171,15 @@ func file_game_v1_game_proto_init() {
 		(*ServerMessage_State)(nil),
 		(*ServerMessage_Event)(nil),
 		(*ServerMessage_Pong)(nil),
+		(*ServerMessage_Garbage)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_v1_game_proto_rawDesc), len(file_game_v1_game_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   10,
+			NumEnums:      4,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
