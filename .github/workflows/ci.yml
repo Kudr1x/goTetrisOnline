@@ -89,7 +89,7 @@ jobs:
         run: go build -v -o bin/${{ matrix.service }} ./services/${{ matrix.service }}/cmd
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.service }}-binary
           path: bin/${{ matrix.service }}
@@ -123,7 +123,7 @@ jobs:
         run: make wasm
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-client
           path: web/static/app.wasm
