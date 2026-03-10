@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main
 
 import (
@@ -54,22 +56,23 @@ func (g *Game) Update() error {
 	var input pb.InputType
 	sendInput := false
 
-	if ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+	switch {
+	case ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyArrowLeft):
 		input = pb.InputType_INPUT_LEFT
 		sendInput = true
-	} else if ebiten.IsKeyPressed(ebiten.KeyD) || ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+	case ebiten.IsKeyPressed(ebiten.KeyD) || ebiten.IsKeyPressed(ebiten.KeyArrowRight):
 		input = pb.InputType_INPUT_RIGHT
 		sendInput = true
-	} else if ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
+	case ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyArrowUp):
 		input = pb.InputType_INPUT_ROTATE_CW
 		sendInput = true
-	} else if ebiten.IsKeyPressed(ebiten.KeyE) {
+	case ebiten.IsKeyPressed(ebiten.KeyE):
 		input = pb.InputType_INPUT_ROTATE_CCW
 		sendInput = true
-	} else if ebiten.IsKeyPressed(ebiten.KeyS) || ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+	case ebiten.IsKeyPressed(ebiten.KeyS) || ebiten.IsKeyPressed(ebiten.KeyArrowDown):
 		input = pb.InputType_INPUT_SOFT_DROP
 		sendInput = true
-	} else if ebiten.IsKeyPressed(ebiten.KeySpace) {
+	case ebiten.IsKeyPressed(ebiten.KeySpace):
 		input = pb.InputType_INPUT_HARD_DROP
 		sendInput = true
 	}
@@ -137,7 +140,7 @@ func (g *Game) drawBoard(screen *ebiten.Image, view *renderer.GameView) {
 
 			px := float32(boardX + x*cellSize)
 			py := float32(boardY + y*cellSize)
-			vector.DrawFilledRect(screen, px, py, cellSize-1, cellSize-1, clr, false)
+			vector.FillRect(screen, px, py, cellSize-1, cellSize-1, clr, false)
 		}
 	}
 }
@@ -156,7 +159,7 @@ func (g *Game) drawSidebar(screen *ebiten.Image, view *renderer.GameView) {
 				if nextGrid.Grid[py][px] {
 					fx := float32(sidebarX + px*cellSize)
 					fy := float32(y + py*cellSize)
-					vector.DrawFilledRect(screen, fx, fy, cellSize-1, cellSize-1, clr, false)
+					vector.FillRect(screen, fx, fy, cellSize-1, cellSize-1, clr, false)
 				}
 			}
 		}
